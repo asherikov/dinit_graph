@@ -84,7 +84,7 @@ Example output
 --------------
 
 <figure>
-<img src="examples/dinit_service_example.svg" alt="Dinit service sxample" />
+<img src="https://raw.githubusercontent.com/asherikov/dinit_graph/main/examples/dinit_service_example.svg" alt="example" />
 </figure>
 
 Different colors and arrow styles represent different service types and their
