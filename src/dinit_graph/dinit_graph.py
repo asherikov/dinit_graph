@@ -96,6 +96,7 @@ def parse_service_file(file_path):
         'waits-for': [],
         'after': [],
         'before': [],
+        'chain-to': [],
         'depends-on.d': [],
         'depends-ms.d': [],
         'waits-for.d': []
@@ -108,6 +109,7 @@ def parse_service_file(file_path):
         'waits-for': [],
         'after': [],
         'before': [],
+        'chain-to': [],
         'depends-on.d': [],
         'depends-ms.d': [],
         'waits-for.d': []
@@ -293,10 +295,12 @@ def get_edge_style_for_dependency_type(dep_type):
         'depends-ms': 'dinit_depends_ms',      # Milestone dependency
         'waits-for': 'dinit_waits_for',        # Waits-for dependency
         'after': 'dinit_after',                # Ordering dependency
+        'chain-to': 'dinit_chain_to',          # Chain-to dependency
         'parametrized_depends-on': 'dinit_parametrized_depends_on',  # Parametrized dependency
         'parametrized_depends-ms': 'dinit_parametrized_depends_ms',  # Parametrized milestone dependency
         'parametrized_waits-for': 'dinit_parametrized_waits_for',    # Parametrized waits-for dependency
         'parametrized_after': 'dinit_parametrized_after',            # Parametrized ordering dependency
+        'parametrized_chain-to': 'dinit_parametrized_chain_to',      # Parametrized chain-to dependency
     }
     return edge_style_map.get(dep_type, 'dinit_depends_on')
 
@@ -346,6 +350,15 @@ def add_dependency_edges(service_name, dependencies, service_dir, nodes, edges):
             edges.append(edge_tuple)
         # None indicates no parameter label
 
+    # Handle 'chain-to' dependencies (chain service to another service)
+    for dep in dependencies['chain-to']:
+        if dep not in nodes:
+            nodes[dep] = ('unknown', False)  # Default type for missing dependencies
+        edge_tuple = (service_name, dep, 'chain-to', None)  # None indicates no parameter label
+        # Since edges is now always a list, just append if not already present
+        if edge_tuple not in edges:
+            edges.append(edge_tuple)
+
 
 def add_parametrized_dependency_edges(service_name, parametrized_dependencies, nodes, edges):
     """Add dependency edges for parametrized dependencies that match existing services."""
@@ -353,7 +366,7 @@ def add_parametrized_dependency_edges(service_name, parametrized_dependencies, n
     all_service_names = list(nodes.keys())
 
     # Process all parametrized dependency types
-    for dep_type in ['depends-on', 'depends-ms', 'waits-for', 'after', 'before']:
+    for dep_type in ['depends-on', 'depends-ms', 'waits-for', 'after', 'before', 'chain-to']:
         for parametrized_dep in parametrized_dependencies[dep_type]:
             _handle_parametrized_dependency(
                 service_name, parametrized_dep, dep_type, all_service_names, edges
@@ -677,42 +690,54 @@ def find_common_prefix_and_suffix(directories):
     if not directories:
         return "", ""
 
+    # First, find the common prefix using os.path.commonpath
+    common_prefix = os.path.commonpath(directories)
+
+    # For suffix, we need to find common suffix components manually
     # Split each directory path into components
     split_dirs = [os.path.normpath(d).split(os.sep) for d in directories]
 
-    # Find the common path components from the beginning
-    common_prefix_parts = []
-    for i in range(min(len(parts) for parts in split_dirs)):
-        if all(parts[i] == split_dirs[0][i] for parts in split_dirs):
-            common_prefix_parts.append(split_dirs[0][i])
-        else:
-            break
+    # Normalize the common prefix to components to check for overlaps
+    prefix_parts = os.path.normpath(common_prefix).split(os.sep) if common_prefix else []
 
-    # Find the common path components from the end
+    # Find the common path components from the end (excluding the common prefix part)
+    # We need to look at the remaining parts after removing the common prefix
+    remaining_parts_list = []
+    for parts in split_dirs:
+        if len(parts) >= len(prefix_parts):
+            # Get the parts after the common prefix
+            remaining_parts = parts[len(prefix_parts):] if len(prefix_parts) > 0 else parts
+            remaining_parts_list.append(remaining_parts)
+
+    # Find common suffix in the remaining parts
     common_suffix_parts = []
-    min_len = min(len(parts) for parts in split_dirs)
-    for i in range(1, min_len + 1):
-        if all(parts[-i] == split_dirs[0][-i] for parts in split_dirs):
-            common_suffix_parts.insert(0, split_dirs[0][-i])  # Insert at the beginning to maintain order
-        else:
-            break
+    if remaining_parts_list and all(len(rp) > 0 for rp in remaining_parts_list):
+        min_remaining_len = min(len(rp) for rp in remaining_parts_list)
 
-    # Join the common parts back into paths
-    common_prefix = os.sep.join(common_prefix_parts) if common_prefix_parts else ""
+        for i in range(1, min_remaining_len + 1):
+            # Check if all remaining parts lists have the same element at position -i (from the end)
+            if all(len(rp) >= i and rp[-i] == remaining_parts_list[0][-i] for rp in remaining_parts_list):
+                common_suffix_parts.insert(0, remaining_parts_list[0][-i])  # Insert at beginning to maintain order
+            else:
+                break
 
-    # Only calculate suffix if it doesn't overlap with prefix
-    if common_prefix_parts and common_suffix_parts:
-        # Check if the common parts would overlap
-        total_common_count = len(common_prefix_parts) + len(common_suffix_parts)
-        if total_common_count > min(len(parts) for parts in split_dirs):
-            # If they overlap, we need to adjust
-            overlap = total_common_count - min(len(parts) for parts in split_dirs)
-            common_suffix_parts = common_suffix_parts[overlap:]
-
+    # Join the common suffix parts back into a path
     common_suffix = os.sep.join(common_suffix_parts) if common_suffix_parts else ""
 
+    # Check for overlap between prefix and suffix
+    if prefix_parts and common_suffix_parts:
+        # Calculate if prefix and suffix would overlap
+        total_path = prefix_parts + common_suffix_parts
+        min_total_parts = min(len(parts) for parts in split_dirs)
+        if len(total_path) > min_total_parts:
+            # There's an overlap, adjust the suffix
+            overlap = len(total_path) - min_total_parts
+            if overlap > 0:
+                common_suffix_parts = common_suffix_parts[overlap:]
+                common_suffix = os.sep.join(common_suffix_parts) if common_suffix_parts else ""
+
     # If there's no common suffix at the path component level, try to find common suffixes
-    # within the directory names
+    # within the directory names (last component of each path)
     if not common_suffix:
         # Extract the directory names (last component of each path)
         dir_names = [os.path.basename(d) for d in directories]
@@ -792,13 +817,9 @@ def main():
 
         common_suffix = ""
     else:
-        # For multiple directories, use os.path.commonpath to find common prefix
+        # For multiple directories, use the custom function to find both common prefix and suffix
         resolved_directories = [os.path.abspath(d) for d in args.directories]
-        if resolved_directories:
-            common_prefix = os.path.commonpath(resolved_directories)
-        else:
-            common_prefix = ""
-        common_suffix = ""
+        common_prefix, common_suffix = find_common_prefix_and_suffix(resolved_directories)
 
     # Collect all service files from the provided directories with their directory info
     service_files_with_dir = []

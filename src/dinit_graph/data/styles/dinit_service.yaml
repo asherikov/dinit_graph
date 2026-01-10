@@ -53,62 +53,76 @@ nodes:
 
 # Define edge styles for different dependency types
 edges:
-    # Standard dependency: solid arrow
+    # Standard dependency: solid arrow, red (requires service to run)
     - link: [dinit_unknown, dinit_unknown, dinit_depends_on]
       tags: ["dinit_service"]
       graphviz:
         arrowhead: normal
         style: solid
-        color: black
-    # Milestone dependency: solid arrow with dot
+        color: red
+    # Milestone dependency: solid arrow with dot, black (doesn't require service to run)
     - link: [dinit_unknown, dinit_unknown, dinit_depends_ms]
       tags: ["dinit_service"]
       graphviz:
         arrowhead: dot
         style: solid
         color: black
-    # Waits-for dependency: arrow with diamond head
+    # Waits-for dependency: arrow with diamond head, red (requires service to run)
     - link: [dinit_unknown, dinit_unknown, dinit_waits_for]
       tags: ["dinit_service"]
       graphviz:
         arrowhead: diamond
         style: solid
-        color: black
-    # After dependency (ordering): arrow with tee head
+        color: red
+    # After dependency (ordering): arrow with tee head, black (doesn't require service to run)
     - link: [dinit_unknown, dinit_unknown, dinit_after]
       tags: ["dinit_service"]
       graphviz:
         arrowhead: tee
         style: solid
         color: black
-    # Parametrized dependency: dashed arrow
+    # Chain-to dependency: standard arrow head, blue (doesn't require service to run)
+    - link: [dinit_unknown, dinit_unknown, dinit_chain_to]
+      tags: ["dinit_service"]
+      graphviz:
+        arrowhead: normal
+        style: solid
+        color: blue
+    # Parametrized dependency: dashed arrow, red (requires service to run)
     - link: [dinit_unknown, dinit_unknown, dinit_parametrized_depends_on]
       tags: ["dinit_service"]
       graphviz:
         arrowhead: normal
         style: dashed
-        color: black
-    # Parametrized milestone dependency: dashed arrow with dot
+        color: red
+    # Parametrized milestone dependency: dashed arrow with dot, black (doesn't require service to run)
     - link: [dinit_unknown, dinit_unknown, dinit_parametrized_depends_ms]
       tags: ["dinit_service"]
       graphviz:
         arrowhead: dot
         style: dashed
         color: black
-    # Parametrized waits-for dependency: dashed arrow with diamond head
+    # Parametrized waits-for dependency: dashed arrow with diamond head, red (requires service to run)
     - link: [dinit_unknown, dinit_unknown, dinit_parametrized_waits_for]
       tags: ["dinit_service"]
       graphviz:
         arrowhead: diamond
         style: dashed
-        color: black
-    # Parametrized after dependency (ordering): dashed arrow with tee head
+        color: red
+    # Parametrized after dependency (ordering): dashed arrow with tee head, black (doesn't require service to run)
     - link: [dinit_unknown, dinit_unknown, dinit_parametrized_after]
       tags: ["dinit_service"]
       graphviz:
         arrowhead: tee
         style: dashed
         color: black
+    # Parametrized chain-to dependency: dashed arrow with standard head, blue (doesn't require service to run)
+    - link: [dinit_unknown, dinit_unknown, dinit_parametrized_chain_to]
+      tags: ["dinit_service"]
+      graphviz:
+        arrowhead: normal
+        style: dashed
+        color: blue
 
 # Define view styles
 views:

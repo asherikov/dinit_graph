@@ -49,6 +49,12 @@ test_03_parametrized:
 test_04_style_gen:
 	dinit_graph -S ${BUILD_DIR}/${NAME}/style.yaml
 
+test_05_chain_to:
+	dinit_graph -d ${TEST_DIR}/${NAME}/services -o ${BUILD_DIR}/${NAME}/graph.yaml
+
+test_06_common_suffix:
+	dinit_graph -d ${TEST_DIR}/${NAME}/dir1_common ${TEST_DIR}/${NAME}/dir2_common -o ${BUILD_DIR}/${NAME}/graph.yaml
+
 venv: builddir
 	python3 -m venv ${BUILD_DIR}/venv
 
@@ -57,7 +63,7 @@ venv_test: clean
 	/bin/sh -c ". ${BUILD_DIR}/venv/bin/activate && pip install . && ${MAKE} test"
 
 test:
-	@${MAKE} 01_basic 02_complex_deps 03_parametrized 04_style_gen
+	@${MAKE} 01_basic 02_complex_deps 03_parametrized 04_style_gen 05_chain_to 06_common_suffix
 	@echo "All CLI tests passed!"
 
 clean:
