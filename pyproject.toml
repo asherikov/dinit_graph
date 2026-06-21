@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dinit-graph"
-version = "0.1.0"
+version = "0.1.1"
 
 authors = [
     { name="Alexander Sherikov", email="asherikov@yandex.com" },
@@ -34,8 +34,8 @@ dependencies = [
 dinit_graph = "dinit_graph.dinit_graph:main"
 
 [project.urls]
-Homepage = "https://github.com/asherikov/dinit_graph"
-Issues = "https://github.com/asherikov/dinit_graph/issues"
+Homepage = "https://github.com/asherikov/hiearch"
+Issues = "https://github.com/asherikov/hiearch/issues"
 
 [tool.hatch.build.targets.wheel.sources]
 "src/dinit_graph" = "dinit_graph"
